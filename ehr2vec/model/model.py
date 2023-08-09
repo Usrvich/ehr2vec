@@ -8,6 +8,10 @@ from common.config import instantiate
 from typing import List, Optional, Tuple, Union
 import importlib
 
+# import transformers.modeling_outputs.BaseModelOutputWithPoolingAndCrossAttentions as BaseModelOutputWithPoolingAndCrossAttentions
+import transformers.modeling_outputs as modeling_outputs
+
+
 class BertEHRModel(BertModel):
     def __init__(self, config):
         super().__init__(config)
@@ -197,7 +201,7 @@ class BertEHRModel_temp(BertModel):
         labels = None,
         values = None,
         units = None,      
-    ): #-> Union[Tuple[torch.Tensor], BaseModelOutputWithPoolingAndCrossAttentions]:
+    )-> Union[Tuple[torch.Tensor], modeling_outputs.BaseModelOutputWithPoolingAndCrossAttentions]:
         r"""
         encoder_hidden_states  (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*):
             Sequence of hidden-states at the output of the last layer of the encoder. Used in the cross-attention if
@@ -301,9 +305,17 @@ class BertEHRModel_temp(BertModel):
         sequence_output = encoder_outputs[0]
         pooled_output = self.pooler(sequence_output) if self.pooler is not None else None
 
-        # if not return_dict:
-            # return (sequence_output, pooled_output) + encoder_outputs[1:]
-        outputs = (sequence_output, pooled_output) + encoder_outputs[1:]
+        if not return_dict:
+            outputs = (sequence_output, pooled_output) + encoder_outputs[1:]
+
+        outputs = modeling_outputs.BaseModelOutputWithPoolingAndCrossAttentions(
+            last_hidden_state=sequence_output,
+            pooler_output=pooled_output,
+            past_key_values=encoder_outputs.past_key_values,
+            hidden_states=encoder_outputs.hidden_states,
+            attentions=encoder_outputs.attentions,
+            cross_attentions=encoder_outputs.cross_attentions,
+        )
 
         sequence_output = outputs[0]    # Last hidden state
         logits = self.cls(sequence_output)
