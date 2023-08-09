@@ -91,13 +91,15 @@ class EhrEmbeddings_separate_value_embedding(nn.Module):
         super().__init__()
         self.config = config
         if self.config.method == 'separate_value_embedding':
+            # print("vocab_size: ", config.vocab_size)
+            # print("vocab_type_size: ", config.type_vocab_size)
             self.concept_embeddings = nn.Embedding(config.vocab_size, config.hidden_size)
             self.age_embeddings = Time2Vec(1, config.hidden_size)
             self.abspos_embeddings = Time2Vec(1, config.hidden_size)
             self.segment_embeddings = nn.Embedding(config.type_vocab_size, config.hidden_size)
             # Since the number of different medicines, value and unit are relatively small, so directly apply nn.Embedding
-            self.value_embeddings = nn.Embedding(config.type_vocab_size, config.hidden_size)
-            self.unit_embeddings = nn.Embedding(config.type_vocab_size, config.hidden_size)
+            self.value_embeddings = nn.Embedding(config.vocab_size, config.hidden_size) # vocab_size or type_vocab_size?
+            self.unit_embeddings = nn.Embedding(config.vocab_size, config.hidden_size)
         elif self.config.get('method') == None:
             self.concept_embeddings = nn.Embedding(config.vocab_size, config.hidden_size)
             self.age_embeddings = Time2Vec(1, config.hidden_size)
@@ -156,9 +158,11 @@ class EhrEmbeddings_separate_value_embedding(nn.Module):
             #     embeddings += unit_embedded
         if values is not None:
             value_embedded = self.value_embeddings(values)
+            # print("value_embedded: ", value_embedded.shape)
             embeddings += self.e * value_embedded
         if units is not None:
             unit_embedded = self.unit_embeddings(units)
+            # print("unit_embedded: ", unit_embedded.shape)
             embeddings += self.f * unit_embedded
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)

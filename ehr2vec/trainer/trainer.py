@@ -83,6 +83,7 @@ class EHRTrainer():
         step_loss = 0
         for i, batch in train_loop:
             step_loss += self.train_step(batch).item()
+            print("successful train step", i)
             if (i+1) % self.accumulation_steps == 0:
                 self.update_and_log(i, step_loss, train_loop, epoch_loss)
                 step_loss = 0
