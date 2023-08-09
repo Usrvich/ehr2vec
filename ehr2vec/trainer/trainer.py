@@ -138,6 +138,9 @@ class EHRTrainer():
                 'age': batch['age'] if 'age' in batch else None,
                 'abspos': batch['abspos'] if 'abspos' in batch else None
             },
+            # values = batch['value'] if 'value' in batch else None,
+            values = batch['dose'] if 'dose' in batch else None,
+            units = batch['unit'] if 'unit' in batch else None,
             labels=batch['target'] if 'target' in batch else None,
         )
 

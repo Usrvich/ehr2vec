@@ -20,6 +20,7 @@ class ConceptLoader():
         path = glob.glob(concept_paths)
         # Filter out concepts files
         path = [p for p in path if (split(p)[1]).split('.')[1] in self.concepts]
+        
         # Load concepts
         concepts = pd.concat([self._read_file(p) for p in path], ignore_index=True).drop_duplicates()
         

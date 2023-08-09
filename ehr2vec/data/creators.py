@@ -1,6 +1,7 @@
 import pandas as pd
 from datetime import datetime
 import itertools
+import numpy as np
 
 class BaseCreator():
     def __init__(self, config: dict):
@@ -72,12 +73,36 @@ class BackgroundCreator(BaseCreator):
             origin_point = datetime(**self.config.abspos)
             start = (patients_info['BIRTHDATE'] - origin_point).dt.total_seconds() / 60 / 60
             background['ABSPOS'] = start.tolist() * len(self.config.background)
+        
+        if 'dose' in self.config:
+            background['DOSE'] = -1
+        
+        if 'unit' in self.config:
+            background['UNIT'] = -1
 
         # background['AGE'] = -1
 
         # Prepend background to concepts
         background = pd.DataFrame(background)
         return pd.concat([background, concepts])
+
+class DoseCreator(BaseCreator):
+    feature = id = 'dose'
+    def create(self, concepts: pd.DataFrame, patients_info: pd.DataFrame):
+        if 'DOSE' in concepts.columns:
+            return concepts
+        else:
+            raise KeyError('No dose column found in concepts')
+            # concepts['DOSE'] = np.nan
+
+class UnitCreator(BaseCreator):
+    feature = id = 'unit'
+    def create(self, concepts: pd.DataFrame, patients_info: pd.DataFrame):
+        if 'UNIT' in concepts.columns:
+            return concepts
+        else:
+            raise KeyError('No unit column found in concepts')
+            # concepts['UNIT'] = np.nan
 
 
 """ SIMPLE EXAMPLES """

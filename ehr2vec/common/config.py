@@ -62,6 +62,8 @@ def instantiate(config):
     module = importlib.import_module(module_path)
     class_ = getattr(module, class_name)
     kwargs = {k: v for k, v in config.items() if k != "_target_"}
+    # print(config.items())
+    # print(kwargs)
     instance = class_(**kwargs)
     return instance
 

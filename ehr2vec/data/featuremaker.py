@@ -11,6 +11,11 @@ class FeatureMaker():
             'concept': [],
         }
 
+        # if self.config.get('value', False):
+        #     self.features['value'] = []
+        # if self.config.get('unit', False):
+        #     self.features['unit'] = []
+
         self.order = {
             'concept': 0,
             'background': -1
@@ -20,9 +25,12 @@ class FeatureMaker():
         
 
     def __call__(self, concepts: pd.DataFrame, patients_info: pd.DataFrame):
+
         for creator in self.pipeline:
             concepts = creator(concepts, patients_info)
             concepts['CONCEPT'] = concepts['CONCEPT'].astype(str)
+
+
         features = self.create_features(concepts, patients_info)
 
         return features
@@ -50,6 +58,11 @@ class FeatureMaker():
         pids = concepts['PID'].unique()
         for pid, patient in concepts.groupby('PID'):
             for feature, value in self.features.items():
+                ############################################################
+                # VALUE IS DOSE IN THE DATAFRAME
+                # if feature == 'value':
+                #     value.append(patient['DOSE'].tolist())
+                # else:
                 value.append(patient[feature.upper()].tolist())
         # Add outcomes if in config
         

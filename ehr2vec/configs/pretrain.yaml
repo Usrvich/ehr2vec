@@ -1,8 +1,10 @@
 env: local
 paths:
   # data_path: 'pretrain_datasets/diagnosis_medication/070623/outputs/data' # inside mounted datastore
-  data_path: "..\\outputs\\data_icd10_l"
-  output_path: 'pretraining'
+  # data_path: "..\\outputs\\data_icd10_l"
+  # output_path: 'pretraining'
+  data_path: "C:\\Users\\14552\\Desktop\\block_5\\test_run"
+  output_path: "C:\\Users\\14552\\Desktop\\block_5\\test_run\\pretrain"
   run_name: test
   
 dataset:
@@ -26,6 +28,10 @@ model:
   intermediate_size: 64
   type_vocab_size: 1000
   pool_type: mean
+  method: "separate_value_embedding"
+  embedding:
+    _target_: embeddings.ehr.EhrEmbeddings_separate_value_embedding
+
 
 optimizer:
   lr: 5e-4

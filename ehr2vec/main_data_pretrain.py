@@ -24,8 +24,19 @@ def check_patient_counts(concepts, patients_info, logger):
             
 def process_data(loader, handler, excluder, cfg, logger):
     concepts, patients_info = loader()
+    # print(concepts.head())
+    # print(patients_info.head())
     check_patient_counts(concepts, patients_info, logger)
     features, pids = FeatureMaker(cfg.features)(concepts, patients_info)
+
+    print(features.keys())
+    print(len(features['concept'][1]), features['concept'][1])
+    print(len(features['age'][1]), features['age'][1])
+    print(len(features['abspos'][1]), features['abspos'][1])
+    print(len(features['segment'][1]), features['segment'][1])
+    # print(len(features['medicine'][1]), features['medicine'][1])
+    print(len(features['dose'][1]), features['dose'][1])
+    print(len(features['unit'][1]), features['unit'][1])
     features = handler(features)
     features, _, kept_indices = excluder(features)
     kept_pids = [pids[idx] for idx in kept_indices]
@@ -83,7 +94,6 @@ def main_data(config_path):
     tokenizer.save_vocab(join(cfg.output_dir, 'vocabulary.pt'))
     encoded_data['val'] = tokenizer(features_split['val'])
     encoded_data['test'] = tokenizer(features_split['test'])
-
 
     logger.info("Saving tokenized data")
     for idx, mode in enumerate(['train', 'val', 'test']):

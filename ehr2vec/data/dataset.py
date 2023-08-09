@@ -39,6 +39,23 @@ class BaseEHRDataset(IterableDataset):
 
     def get_patient_dic(self, features: dict, patient_index: int):
         """Get a patient dictionary from a patient index"""
+        # print(features.keys())
+        print(patient_index)
+        print(features['concept'][patient_index])
+        print(torch.tensor(features['concept'][patient_index]))
+        print(features['age'][patient_index])
+        print(torch.tensor(features['age'][patient_index]))
+        print(features['abspos'][patient_index])
+        print(torch.tensor(features['abspos'][patient_index]))
+        print(features['segment'][patient_index])
+        print(torch.tensor(features['segment'][patient_index]))
+        print(features['dose'][patient_index])
+        print(torch.tensor(features['dose'][patient_index]))
+        print(features['unit'][patient_index])
+        print(torch.tensor(features['unit'][patient_index]))
+        print(features['attention_mask'][patient_index])
+        print(torch.tensor(features['attention_mask'][patient_index]))
+        
         return {key: torch.tensor(values[patient_index]) for key, values in features.items()}
 
     def get_file_ids(self):

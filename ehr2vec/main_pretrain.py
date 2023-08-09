@@ -6,7 +6,7 @@ from common import azure
 from common.config import load_config
 from common.loader import create_datasets
 from common.setup import setup_run_folder
-from model.model import BertEHRModel
+from model.model import BertEHRModel, BertEHRModel_temp
 from torch.optim import AdamW
 from trainer.trainer import EHRTrainer
 from transformers import BertConfig, get_linear_schedule_with_warmup
@@ -31,15 +31,26 @@ def main_train(config_path):
     logger.info('Loading data')
     logger.info(f"Using {cfg.dataset.get('num_patients', 'all')} patients")
     train_dataset, val_dataset = create_datasets(cfg)
+
+    # print(train_dataset.vocabulary)
     
     logger.info('Initializing model')
-    model = BertEHRModel(
+    # model = BertEHRModel(
+    #     BertConfig(
+    #         **cfg.model,
+    #         vocab_size=len(train_dataset.vocabulary),
+
+    #     )
+    # )
+
+    model = BertEHRModel_temp(
         BertConfig(
             **cfg.model,
             vocab_size=len(train_dataset.vocabulary),
 
         )
     )
+
     logger.info('Initializing optimizer')
     optimizer = AdamW(
         model.parameters(),
