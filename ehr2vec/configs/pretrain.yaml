@@ -29,8 +29,8 @@ model:
   type_vocab_size: 1000
   pool_type: mean
   method: "separate_value_embedding"
-  embedding:
-    _target_: embeddings.ehr.EhrEmbeddings_separate_value_embedding
+  # embedding:
+  #   _target_: embeddings.ehr.EhrEmbeddings_separate_value_embedding
 
 
 optimizer:

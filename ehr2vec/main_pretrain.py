@@ -33,21 +33,29 @@ def main_train(config_path):
     train_dataset, val_dataset = create_datasets(cfg)
 
     logger.info('Initializing model')
-    # model = BertEHRModel(
-    #     BertConfig(
-    #         **cfg.model,
-    #         vocab_size=len(train_dataset.vocabulary),
 
-    #     )
-    # )
-
-    model = BertEHRModel_temp(
-        BertConfig(
-            **cfg.model,
-            vocab_size=len(train_dataset.vocabulary),
+    if 'embedding' in cfg.model.keys():
+        print("Using BertEHRModel_temp")
+        model = BertEHRModel_temp(
+            BertConfig(
+                **cfg.model,
+                vocab_size=len(train_dataset.vocabulary),
 
         )
     )
+    else:
+        print("Using BertEHRModel")
+        model = BertEHRModel(
+            BertConfig(
+                **cfg.model,
+                vocab_size=len(train_dataset.vocabulary),
+
+            )
+        )
+
+
+
+
 
     logger.info('Initializing optimizer')
     optimizer = AdamW(

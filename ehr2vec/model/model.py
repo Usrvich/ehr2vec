@@ -17,8 +17,10 @@ class BertEHRModel(BertModel):
         super().__init__(config)
 
         if not hasattr(config, 'embedding'):
+            print("Using EhrEmbeddings")
             self.embeddings = EhrEmbeddings(config)
         else:
+            print("Using config.embedding")
             self.embeddings = instantiate(config.embedding)
 
 
@@ -142,8 +144,10 @@ class BertEHRModel_temp(BertModel):
     def __init__(self, config):
         super().__init__(config)
         if not hasattr(config, 'embedding'):
+            print("Using EhrEmbeddings")
             self.embeddings = EhrEmbeddings(config)
         else:
+            print("Using config.embedding")
             # self.embeddings = instantiate(config.embedding)
             module_path, class_name = config.embedding._target_.rsplit(".", 1)
             module = importlib.import_module(module_path)

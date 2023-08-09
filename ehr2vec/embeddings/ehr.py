@@ -140,7 +140,9 @@ class EhrEmbeddings_separate_value_embedding(nn.Module):
         embeddings = self.a * self.concept_embeddings(input_ids)
         
         if token_type_ids is not None:
+            print(token_type_ids.shape)
             segments_embedded = self.segment_embeddings(token_type_ids)
+            print(segments_embedded.shape)
             embeddings += self.b * segments_embedded
 
         if position_ids is not None:

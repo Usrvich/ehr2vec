@@ -26,7 +26,8 @@ class EHRTrainer():
         logger = None,
         run = None
     ):
-        self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+        # self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+        self.device = torch.device('cpu')
         if logger:
             logger.info(f"Run on {self.device}")
         self.run_folder = os.path.join(cfg.paths.output_path, cfg.paths.run_name)
@@ -82,8 +83,25 @@ class EHRTrainer():
         epoch_loss = []
         step_loss = 0
         for i, batch in train_loop:
+            for z in range(len(batch['segment'])):
+                seg = batch['segment'][z]
+                # print(seg.shape)
+                flag = False
+                # count = 0
+                for s in range(len(seg)):
+                    if seg[s] >= 1000:
+                         flag = True
+                         count = s
+                if flag:
+                    print(batch['segment'])
+                    print(batch['segment'].shape)
+                    print(seg)
+                    print(count)
+                    print(z)
+                    print(batch['segment'][4])
+                        #  print(batch['segment'])
             step_loss += self.train_step(batch).item()
-            print("successful train step", i)
+            print("successfully train step", i)
             if (i+1) % self.accumulation_steps == 0:
                 self.update_and_log(i, step_loss, train_loop, epoch_loss)
                 step_loss = 0
@@ -131,19 +149,33 @@ class EHRTrainer():
 
     def forward_pass(self, batch: dict):
         self.to_device(batch)
-        return self.model(
-            input_ids=batch['concept'],
-            attention_mask=batch['attention_mask'] if 'attention_mask' in batch else None,
-            token_type_ids=batch['segment'] if 'segment' in batch else None,
-            position_ids={
-                'age': batch['age'] if 'age' in batch else None,
-                'abspos': batch['abspos'] if 'abspos' in batch else None
-            },
-            # values = batch['value'] if 'value' in batch else None,
-            values = batch['dose'] if 'dose' in batch else None,
-            units = batch['unit'] if 'unit' in batch else None,
-            labels=batch['target'] if 'target' in batch else None,
-        )
+        if 'embedding' in self.cfg.model.keys():
+            return self.model(
+                input_ids=batch['concept'],
+                attention_mask=batch['attention_mask'] if 'attention_mask' in batch else None,
+                token_type_ids=batch['segment'] if 'segment' in batch else None,
+                position_ids={
+                    'age': batch['age'] if 'age' in batch else None,
+                    'abspos': batch['abspos'] if 'abspos' in batch else None
+                },
+                values = batch['dose'] if 'dose' in batch else None,
+                units = batch['unit'] if 'unit' in batch else None,
+                labels=batch['target'] if 'target' in batch else None,
+            )
+        else:
+            return self.model(
+                input_ids=batch['concept'],
+                attention_mask=batch['attention_mask'] if 'attention_mask' in batch else None,
+                token_type_ids=batch['segment'] if 'segment' in batch else None,
+                position_ids={
+                    'age': batch['age'] if 'age' in batch else None,
+                    'abspos': batch['abspos'] if 'abspos' in batch else None
+                },
+                # values = batch['value'] if 'value' in batch else None,
+                # values = batch['dose'] if 'dose' in batch and 'embedding' in self.cfg.model.keys() else None,
+                # units = batch['unit'] if 'unit' in batch and 'embedding' in self.cfg.model.keys() else None,
+                labels=batch['target'] if 'target' in batch else None,
+            )
 
     def backward_pass(self, loss):
         loss.backward()
