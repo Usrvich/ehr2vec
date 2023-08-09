@@ -40,6 +40,12 @@ class EHRTokenizer():
 
             patient['concept'] = self.encode(patient['concept'])            # Encode concepts
 
+            # If units and values in patient, encode them
+            if 'unit' in patient:
+                patient['unit'] = self.encode(patient['unit'])
+            if 'dose' in patient:
+                patient['dose'] = self.encode(patient['dose'])
+
             for key, value in patient.items():
                 data[key].append(value)
 

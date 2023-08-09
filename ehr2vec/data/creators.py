@@ -90,6 +90,7 @@ class DoseCreator(BaseCreator):
     feature = id = 'dose'
     def create(self, concepts: pd.DataFrame, patients_info: pd.DataFrame):
         if 'DOSE' in concepts.columns:
+            concepts['DOSE'] = concepts['DOSE'].astype(str)
             return concepts
         else:
             raise KeyError('No dose column found in concepts')
@@ -99,6 +100,7 @@ class UnitCreator(BaseCreator):
     feature = id = 'unit'
     def create(self, concepts: pd.DataFrame, patients_info: pd.DataFrame):
         if 'UNIT' in concepts.columns:
+            concepts['UNIT'] = concepts['UNIT'].astype(str)
             return concepts
         else:
             raise KeyError('No unit column found in concepts')
