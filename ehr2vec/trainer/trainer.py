@@ -141,7 +141,6 @@ class EHRTrainer():
 
     def validate_and_log(self, epoch, epoch_loss, train_loop):
         val_loss, metrics = self.validate()
-        print("val loss", val_loss)
         if self.run is not None:
             self.run.log_metric(name='Val loss', value=val_loss)
             for k, v in metrics.items():
@@ -214,20 +213,18 @@ class EHRTrainer():
         with torch.no_grad():
             for batch in val_loop:
                 outputs = self.forward_pass(batch)
+        
+                # deal with the last batch
+                # if the last batch is too small and no tokens are masked or replaced there (by chance) the val_loss will be nan
+                if torch.isnan(outputs.loss):
+                    val_loss += 0
+                else:
+                    val_loss += outputs.loss.item()
 
-                val_loss += outputs.loss.item()
-                # print("output.loss.item()", outputs.loss.item())
-                # print("batch_size", len(batch["concept"]))
-                # output the last batch
-                if len(batch["concept"]) < self.args['batch_size']:
-                    print("output.loss.item()", outputs.loss.item())
-                    print("batch_size", len(batch["concept"]))
-                    print(batch["concept"])
                 for name, func in self.metrics.items():
                     metric_values[name].append(func(outputs, batch))
 
         self.model.train()
-        # print("val loss in val", val_loss)
         
         return val_loss / len(val_loop), {name: sum(values) / len(values) for name, values in metric_values.items()}
 

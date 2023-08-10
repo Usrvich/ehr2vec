@@ -1,6 +1,6 @@
 import torch
 from transformers import BatchEncoding
-
+from data_fixes.handle import Handler
 
 class EHRTokenizer():
     def __init__(self, config, vocabulary=None):
@@ -87,6 +87,9 @@ class EHRTokenizer():
 
         for key, value in patient.items():
             patient[key] = value[:background_length] + value[-truncation_length:]    # Keep background sentence + newest information
+        
+        if "segment" in patient.items():
+            patient["segment"] = Handler.normalize_segments(patient["segment"])
 
         return patient
 

@@ -30,6 +30,11 @@ class FeatureMaker():
             concepts = creator(concepts, patients_info)
             concepts['CONCEPT'] = concepts['CONCEPT'].astype(str)
 
+        # statistics for how many unique admission IDs there are for a patient, top 10
+        print(concepts.groupby('PID')['ADMISSION_ID'].nunique().value_counts().head(10))
+        # statistics for which segment number the patient ends up with
+        print(concepts.groupby('PID')['SEGMENT'].max().value_counts().head(10))
+
 
         features = self.create_features(concepts, patients_info)
 
