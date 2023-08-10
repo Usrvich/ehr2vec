@@ -26,7 +26,8 @@ model:
   num_hidden_layers: 3
   num_attention_heads: 3
   intermediate_size: 64
-  type_vocab_size: 1000
+  # type_vocab_size: 1000
+  type_vocab_size: 2000
   pool_type: mean
   method: "separate_value_embedding"
   # embedding:

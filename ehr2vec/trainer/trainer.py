@@ -26,8 +26,8 @@ class EHRTrainer():
         logger = None,
         run = None
     ):
-        # self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-        self.device = torch.device('cpu')
+        self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+        # self.device = torch.device('cpu')
         if logger:
             logger.info(f"Run on {self.device}")
         self.run_folder = os.path.join(cfg.paths.output_path, cfg.paths.run_name)
@@ -83,34 +83,41 @@ class EHRTrainer():
         epoch_loss = []
         step_loss = 0
         for i, batch in train_loop:
-            for z in range(len(batch['segment'])):
-                seg = batch['segment'][z]
-                # print(seg.shape)
-                flag = False
-                # count = 0
-                for s in range(len(seg)):
-                    if seg[s] >= 1000:
-                         flag = True
-                         count = s
-                if flag:
-                    print(batch['segment'])
-                    print(batch['segment'].shape)
-                    print(seg)
-                    print(count)
-                    print(z)
-                    # print(batch['segment'][0])
-                    # print(batch['segment'][1])
-                    # print(batch['segment'][2])
-                    # print(batch['segment'][3])
-                    # print(batch['segment'][4])
-                    # print(batch['segment'][5])
-                    # print(batch['segment'][6])
-                    print(batch['segment'][4])
-                    print(batch['age'][4])
-                    # print(batch['dose'])
-                        #  print(batch['segment'])
+            # print(batch['segment'][0])
+            # print(batch['segment'][1])
+            # print(batch['segment'][2])
+            # print(batch['segment'][3])
+            # print(batch['segment'][4])
+            # print(batch['segment'][5])
+            # print(batch['segment'][6])
+            # for z in range(len(batch['segment'])):
+            #     seg = batch['segment'][z]
+            #     # print(seg.shape)
+            #     flag = False
+            #     # count = 0
+            #     for s in range(len(seg)):
+            #         if seg[s] >= 1000:
+            #              flag = True
+            #              count = s
+            #     if flag:
+            #         print(batch['segment'])
+            #         print(batch['segment'].shape)
+            #         print(seg)
+            #         print(count)
+            #         print(z)
+            #         # print(batch['segment'][0])
+            #         # print(batch['segment'][1])
+            #         # print(batch['segment'][2])
+            #         # print(batch['segment'][3])
+            #         # print(batch['segment'][4])
+            #         # print(batch['segment'][5])
+            #         # print(batch['segment'][6])
+            #         print(batch['segment'][4])
+            #         print(batch['age'][4])
+            #         # print(batch['dose'])
+            #             #  print(batch['segment'])
             step_loss += self.train_step(batch).item()
-            print("successfully train step", i)
+            # print("successfully train step", i)
             if (i+1) % self.accumulation_steps == 0:
                 self.update_and_log(i, step_loss, train_loop, epoch_loss)
                 step_loss = 0
@@ -134,6 +141,7 @@ class EHRTrainer():
 
     def validate_and_log(self, epoch, epoch_loss, train_loop):
         val_loss, metrics = self.validate()
+        print("val loss", val_loss)
         if self.run is not None:
             self.run.log_metric(name='Val loss', value=val_loss)
             for k, v in metrics.items():
@@ -192,6 +200,7 @@ class EHRTrainer():
     def validate(self):
         """Returns the validation loss and metrics"""
         if self.val_dataset is None:
+            print("No validation dataset provided")
             self.log('No validation dataset provided')
             return None, None
         
@@ -205,11 +214,20 @@ class EHRTrainer():
         with torch.no_grad():
             for batch in val_loop:
                 outputs = self.forward_pass(batch)
+
                 val_loss += outputs.loss.item()
+                # print("output.loss.item()", outputs.loss.item())
+                # print("batch_size", len(batch["concept"]))
+                # output the last batch
+                if len(batch["concept"]) < self.args['batch_size']:
+                    print("output.loss.item()", outputs.loss.item())
+                    print("batch_size", len(batch["concept"]))
+                    print(batch["concept"])
                 for name, func in self.metrics.items():
                     metric_values[name].append(func(outputs, batch))
 
         self.model.train()
+        # print("val loss in val", val_loss)
         
         return val_loss / len(val_loop), {name: sum(values) / len(values) for name, values in metric_values.items()}
 
