@@ -23,8 +23,10 @@ features:
   background: ['GENDER']
 
   # medicine: true # concept is medicine
-  dose: true
-  unit: true
+  # dose: true
+  # unit: true
+  # dose: false
+  # unit: false
 
 tokenizer:
   sep_tokens: true

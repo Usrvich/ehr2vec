@@ -29,7 +29,7 @@ def process_data(loader, handler, excluder, cfg, logger):
     check_patient_counts(concepts, patients_info, logger)
     features, pids = FeatureMaker(cfg.features)(concepts, patients_info)
 
-    # print(features.keys())
+    print(features.keys())
     # print(len(features['concept'][1]), features['concept'][1])
     # print(len(features['age'][1]), features['age'][1])
     # print(len(features['abspos'][1]), features['abspos'][1])
