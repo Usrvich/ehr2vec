@@ -78,7 +78,7 @@ class BackgroundCreator(BaseCreator):
             background['DOSE'] = -1
         
         if 'unit' in self.config:
-            background['UNIT'] = -1
+            background['UNIT'] = '-1'
 
         # background['AGE'] = -1
 
@@ -90,7 +90,12 @@ class DoseCreator(BaseCreator):
     feature = id = 'dose'
     def create(self, concepts: pd.DataFrame, patients_info: pd.DataFrame):
         if 'DOSE' in concepts.columns:
-            concepts['DOSE'] = concepts['DOSE'].astype(str)
+            # concepts['DOSE'] = concepts['DOSE'].astype(str)
+            # convert nans to -1
+            # concepts['DOSE'] = concepts['DOSE'].replace('nan', '-1')
+            # concepts['DOSE'] = concepts['DOSE'].astype(str)
+            # convert nan to -1
+            concepts['DOSE'] = concepts['DOSE'].fillna(-1)
             return concepts
         else:
             raise KeyError('No dose column found in concepts')
@@ -100,7 +105,12 @@ class UnitCreator(BaseCreator):
     feature = id = 'unit'
     def create(self, concepts: pd.DataFrame, patients_info: pd.DataFrame):
         if 'UNIT' in concepts.columns:
-            concepts['UNIT'] = concepts['UNIT'].astype(str)
+            # concepts['UNIT'] = concepts['UNIT'].astype(str)
+            # convert nans to -1
+            # concepts['UNIT'] = concepts['UNIT'].replace('nan', '-1')
+            # concepts['UNIT'] = concepts['UNIT'].astype(str)
+            # convert nan to -1
+            concepts['UNIT'] = concepts['UNIT'].fillna('-1')
             return concepts
         else:
             raise KeyError('No unit column found in concepts')

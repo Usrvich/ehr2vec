@@ -29,16 +29,16 @@ def process_data(loader, handler, excluder, cfg, logger):
     check_patient_counts(concepts, patients_info, logger)
     features, pids = FeatureMaker(cfg.features)(concepts, patients_info)
 
-    print(features.keys())
-    # print(len(features['concept'][1]), features['concept'][1])
-    # print(len(features['age'][1]), features['age'][1])
-    # print(len(features['abspos'][1]), features['abspos'][1])
-    # print(len(features['segment'][1]), features['segment'][1])
+    # print(features.keys())
+    # print(len(features['concept'][0]), features['concept'][0])
+    # print(len(features['age'][0]), features['age'][0])
+    # print(len(features['abspos'][3]), features['abspos'][3])
+    # print(len(features['segment'][0]), features['segment'][0])
     # print(len(features['segment'][2]), features['segment'][2])
     # print(len(features['segment'][3]), features['segment'][3])
     # print(len(features['medicine'][1]), features['medicine'][1])
-    # print(len(features['dose'][1]), features['dose'][1])
-    # print(len(features['unit'][1]), features['unit'][1])
+    # print(len(features['dose'][0]), features['dose'][0])
+    # print(len(features['unit'][0]), features['unit'][0])
     features = handler(features)
     features, _, kept_indices = excluder(features)
     kept_pids = [pids[idx] for idx in kept_indices]
@@ -96,6 +96,11 @@ def main_data(config_path):
     tokenizer.save_vocab(join(cfg.output_dir, 'vocabulary.pt'))
     encoded_data['val'] = tokenizer(features_split['val'])
     encoded_data['test'] = tokenizer(features_split['test'])
+
+    print("Training Dataset Size: ", len(encoded_data['train']['concept']))
+    print("Validation Dataset Size: ", len(encoded_data['val']['concept']))
+    print("Test Dataset Size: ", len(encoded_data['test']['concept']))
+
 
     logger.info("Saving tokenized data")
     for idx, mode in enumerate(['train', 'val', 'test']):

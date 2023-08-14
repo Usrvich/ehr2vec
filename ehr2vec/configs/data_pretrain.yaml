@@ -7,7 +7,7 @@ loader:
   data_dir: "C:\\Users\\14552\\Desktop\\block_5\\test_run"
   patients_info: patients_info.csv
   concepts: [
-    # diagnose
+    diagnose,
     medication
   ]
   batch_size: 50
@@ -20,11 +20,12 @@ features:
     month: 1
     day: 26
   segment: true
-  background: ['GENDER']
+  # background: ['GENDER']
 
   # medicine: true # concept is medicine
-  # dose: true
-  # unit: true
+  dose: true
+  unit: true
+  background: ['GENDER']
   # dose: false
   # unit: false
 

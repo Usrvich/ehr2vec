@@ -1,5 +1,5 @@
 import torch.nn as nn
-from embeddings.time2vec import Time2Vec
+from embeddings.time2vec import Time2Vec, Float2Vec
 import torch
 
 
@@ -91,6 +91,7 @@ class EhrEmbeddings_separate_value_embedding(nn.Module):
         super().__init__()
         self.config = config
         if self.config.method == 'separate_value_embedding':
+            print("separate_value_embedding")
             # print("vocab_size: ", config.vocab_size)
             # print("vocab_type_size: ", config.type_vocab_size)
             self.concept_embeddings = nn.Embedding(config.vocab_size, config.hidden_size)
@@ -98,8 +99,8 @@ class EhrEmbeddings_separate_value_embedding(nn.Module):
             self.abspos_embeddings = Time2Vec(1, config.hidden_size)
             self.segment_embeddings = nn.Embedding(config.type_vocab_size, config.hidden_size)
             # Since the number of different medicines, value and unit are relatively small, so directly apply nn.Embedding
-            self.value_embeddings = nn.Embedding(config.vocab_size, config.hidden_size) # vocab_size or type_vocab_size?
-            self.unit_embeddings = nn.Embedding(config.vocab_size, config.hidden_size)
+            self.value_embeddings = Float2Vec(1, config.hidden_size) # vocab_size or type_vocab_size?
+            self.unit_embeddings = nn.Embedding(config.type_vocab_size, config.hidden_size)
         elif self.config.get('method') == None:
             self.concept_embeddings = nn.Embedding(config.vocab_size, config.hidden_size)
             self.age_embeddings = Time2Vec(1, config.hidden_size)

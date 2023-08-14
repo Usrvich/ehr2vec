@@ -8,6 +8,8 @@ from common.logger import TqdmToLogger
 from dataloader.collate_fn import dynamic_padding
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+import numpy as np
 
 yaml.add_representer(Config, lambda dumper, data: data.yaml_repr(dumper))
 
@@ -55,6 +57,9 @@ class EHRTrainer():
 
         self.args = {**default_args, **args}
 
+        self.train_history = []
+        self.val_history = []
+
     def update_attributes(self, **kwargs):
         for key, value in kwargs.items():
             if key == 'args':
@@ -83,39 +88,6 @@ class EHRTrainer():
         epoch_loss = []
         step_loss = 0
         for i, batch in train_loop:
-            # print(batch['segment'][0])
-            # print(batch['segment'][1])
-            # print(batch['segment'][2])
-            # print(batch['segment'][3])
-            # print(batch['segment'][4])
-            # print(batch['segment'][5])
-            # print(batch['segment'][6])
-            # for z in range(len(batch['segment'])):
-            #     seg = batch['segment'][z]
-            #     # print(seg.shape)
-            #     flag = False
-            #     # count = 0
-            #     for s in range(len(seg)):
-            #         if seg[s] >= 1000:
-            #              flag = True
-            #              count = s
-            #     if flag:
-            #         print(batch['segment'])
-            #         print(batch['segment'].shape)
-            #         print(seg)
-            #         print(count)
-            #         print(z)
-            #         # print(batch['segment'][0])
-            #         # print(batch['segment'][1])
-            #         # print(batch['segment'][2])
-            #         # print(batch['segment'][3])
-            #         # print(batch['segment'][4])
-            #         # print(batch['segment'][5])
-            #         # print(batch['segment'][6])
-            #         print(batch['segment'][4])
-            #         print(batch['age'][4])
-            #         # print(batch['dose'])
-            #             #  print(batch['segment'])
             step_loss += self.train_step(batch).item()
             # print("successfully train step", i)
             if (i+1) % self.accumulation_steps == 0:
@@ -149,6 +121,13 @@ class EHRTrainer():
         self.log(f'Epoch {epoch} train loss: {sum(epoch_loss) / (len(train_loop) / self.accumulation_steps)}')
         self.log(f'Epoch {epoch} val loss: {val_loss}')
         self.log(f'Epoch {epoch} metrics: {metrics}\n')
+
+        self.train_history.append(sum(epoch_loss) / (len(train_loop) / self.accumulation_steps))
+        self.val_history.append(val_loss)
+
+        if epoch == self.args['epochs'] - 1:
+            self.plot_histories(self.train_history, self.val_history)
+            
 
     def setup_training(self) -> DataLoader:
         self.model.train()
@@ -289,3 +268,28 @@ class EHRTrainer():
         """Prints an info message"""
         if self.args['info']:
             print(f'[INFO] {message}')
+
+    @staticmethod
+    def plot_histories(train_history=None, val_history=None, label="Loss"):
+        """
+        Takes a list of training and/or validation metrics and plots them
+        Returns: plt.figure and ax objects
+        """
+        if not train_history and not val_history:
+            raise ValueError("Must specify at least one of 'train_histories' and 'val_histories'")
+        fig = plt.figure(figsize=(5, 3))
+        ax = fig.add_subplot(111)
+        
+        epochs = np.arange(len(train_history or val_history))
+        if train_history:
+            ax.plot(epochs, train_history, label="Training", color="black")
+        if val_history:
+            ax.plot(epochs, val_history, label="Validation", color="darkred")
+        
+        ax.set_xlabel("Epoch")
+        ax.set_ylabel(label)
+        ax.legend(loc=0)
+
+        plt.savefig(f"{label.lower()}_history.png", dpi=300, bbox_inches='tight')
+        
+        
