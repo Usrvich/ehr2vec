@@ -1,0 +1,80 @@
+data:
+  censorer:
+    _target_: data_fixes.censor.EQ_Censorer
+  max_age: 80
+  min_age: 40
+  min_len: 1
+  remove_background:
+    dataset:
+      ignore_special_tokens: true
+      masking_ratio: 0.8
+      replace_ratio: 0.1
+      select_ratio: 0.2
+    remove_background: false
+    truncation_len: 512
+  select_censored: false
+  test_split: 0.0
+  truncation_len: 512
+description: in-training calibration for anti-pcsk9
+env: azure
+
+initial_cv_ft: True
+
+metrics:
+  mean_probability:
+    _target_: evaluation.metrics.Mean_Probability
+  pr_auc:
+    _target_: evaluation.metrics.PR_AUC
+  precentage_positives:
+    _target_: evaluation.metrics.Percentage_Positives
+  roc_auc:
+    _target_: evaluation.metrics.ROC_AUC
+
+model:
+  behrt_embeddings: false
+  bidirectional: true
+  discrete_abspos_embeddings: false
+  fix_bert: false
+  plusplus: true
+  pool_type: gru
+  focal_loss: true
+optimizer:
+  eps: 1.0e-06
+  lr: 2.0e-05
+outcome:
+  censor_type: ANTI_PCSK9
+  n_hours: -168
+  type: ANTI_PCSK9
+paths:
+  data_path: features/finetune_data_all_10_folds#formatted_data/med_diag #/tmp/tmptowppvu0/features/med_diag_03
+  outcome: outcomes/ANTI_PCSK9_COMBINED/ANTI_PCSK9_COMBINED.pt
+  output_path: outputs
+  pretrain_model_path: models/pt_for_ft/pt_for_ft #models/first_pretrain_model_01/xue_first_pretrain #/tmp/tmptowppvu0/models/FV1_BS1_SEP1__abspos_++_t2v_age__MRR20
+  run_name: ft_5_folds_intraining_calibration # finetune_ANTI_PCSK9_censored_7_days_pre_ANTI_PCSK9_CV_001
+  save_folder_path: models/ft_5_folds_intraining_calibration # FV1_BS1_SEP1__abspos_++_t2v_age__MRR20/CV/ANTI_PCSK9
+  tokenized_dir: tokenized_data_all_10_folds_ft #tokenized_ae #tokenized_fv_sep_pt_1_1M
+  tokenized_file: tokenized_finetune.pt
+  tokenized_pids: pids_finetune.pt
+  predefined_splits: intraining_5_folds
+scheduler:
+  _target_: transformers.get_constant_schedule_with_warmup
+  #num_warmup_epochs: 5
+  num_warmup_steps: 15000
+trainer_args:
+  batch_size: 512
+  checkpoint_frequency: 500
+  early_stopping: 50
+  effective_batch_size: 512
+  epochs: 50 #150
+  gradient_clip:
+    clip_value: 1.0
+  info: true
+  mixed_precision: false
+  pos_weight: null
+  sample_weight_function:
+    _target_: evaluation.utils.inverse_sqrt
+  sample_weight_multiplier: 1
+  sampler: true
+  shuffle: false
+  stopping_metric: roc_auc
+  val_batch_size: 512

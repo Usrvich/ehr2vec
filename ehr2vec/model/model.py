@@ -9,6 +9,7 @@ from ehr2vec.common.config import instantiate
 from ehr2vec.embeddings.ehr import BehrtEmbeddings, EhrEmbeddings, DiscreteAbsposEmbeddings
 from ehr2vec.model.activations import SwiGLU
 from ehr2vec.model.heads import FineTuneHead, HMLMHead, MLMHead
+from ehr2vec.model.focal_loss import sigmoid_focal_loss
 
 
 logger = logging.getLogger(__name__)
@@ -104,6 +105,16 @@ class BertForFineTuning(BertEHRModel):
             pos_weight = None
 
         self.loss_fct = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+        self.cls = FineTuneHead(config)
+        logger.info(f"Using {self.cls.__class__.__name__} as classifier.")
+        
+    def get_loss(self, hidden_states, labels, labels_mask=None):    
+        return self.loss_fct(hidden_states.view(-1), labels.view(-1))
+
+class BertForFineTuningWithFocalLoss(BertEHRModel):
+    def __init__(self, config):
+        super().__init__(config)
+        self.loss_fct = sigmoid_focal_loss
         self.cls = FineTuneHead(config)
         logger.info(f"Using {self.cls.__class__.__name__} as classifier.")
         
