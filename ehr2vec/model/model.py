@@ -9,7 +9,9 @@ from ehr2vec.common.config import instantiate
 from ehr2vec.embeddings.ehr import BehrtEmbeddings, EhrEmbeddings, DiscreteAbsposEmbeddings
 from ehr2vec.model.activations import SwiGLU
 from ehr2vec.model.heads import FineTuneHead, HMLMHead, MLMHead
-from ehr2vec.model.focal_loss import sigmoid_focal_loss
+from ehr2vec.model.losses.focal_loss import sigmoid_focal_loss, FocalLossAdaptive, SigmoidFocalLoss
+from ehr2vec.model.losses.mmce import MMCE, MMCE_weighted
+from ehr2vec.model.losses.brier_score import BrierScore
 
 
 logger = logging.getLogger(__name__)
@@ -104,22 +106,52 @@ class BertForFineTuning(BertEHRModel):
         else:
             pos_weight = None
 
-        self.loss_fct = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+        device = torch.device('cuda') if torch.cuda.is_available() else 'cpu'
+
+        if config.loss_fct == 'bce':
+            self.loss_fct = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+        elif config.loss_fct == 'mmce':
+            self.loss_fct = MMCE(device)
+        elif config.loss_fct == 'mmce_weighted':
+            self.loss_fct = MMCE_weighted(device)
+        elif config.loss_fct == 'focal_loss':
+            self.loss_fct = SigmoidFocalLoss(alpha=config.alpha, gamma=config.gamma)
+        elif config.loss_fct == 'focal_loss_adaptive':
+            self.loss_fct = FocalLossAdaptive(gamma=config.gamma, size_average=True, device=device)
+        elif config.loss_fct == 'birer_score':
+            self.loss_fct = BrierScore()
+        else:
+            self.loss_fct = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+        
+        logger.info(f"Using {self.loss_fct.__class__.__name__} as loss function.")
+        print(f"Using {self.loss_fct.__class__.__name__} as loss function.")
+        
         self.cls = FineTuneHead(config)
         logger.info(f"Using {self.cls.__class__.__name__} as classifier.")
         
     def get_loss(self, hidden_states, labels, labels_mask=None):    
         return self.loss_fct(hidden_states.view(-1), labels.view(-1))
 
+# class BertForFineTuningWithFocalLoss(BertEHRModel):
+#     def __init__(self, config):
+#         super().__init__(config)
+#         self.loss_fct = sigmoid_focal_loss
+#         self.cls = FineTuneHead(config)
+#         logger.info(f"Using {self.cls.__class__.__name__} as classifier.")
+        
+#     def get_loss(self, hidden_states, labels, labels_mask=None):    
+#         return self.loss_fct(hidden_states.view(-1), labels.view(-1))
+
 class BertForFineTuningWithFocalLoss(BertEHRModel):
     def __init__(self, config):
         super().__init__(config)
-        self.loss_fct = sigmoid_focal_loss
+        self.loss_fct = SigmoidFocalLoss(alpha=0.25, gamma=2, reduction='mean')
         self.cls = FineTuneHead(config)
         logger.info(f"Using {self.cls.__class__.__name__} as classifier.")
         
-    def get_loss(self, hidden_states, labels, labels_mask=None):    
+    def get_loss(self, hidden_states, labels, labels_mask=None):
         return self.loss_fct(hidden_states.view(-1), labels.view(-1))
+
 
 class BertForRegression(BertEHRModel):
     """Regression model for fine-tuning. Uses MSE loss"""

@@ -15,7 +15,7 @@ from ehr2vec.common.setup import DirectoryPreparer
 from ehr2vec.common.utils import hook_fn
 from ehr2vec.data.utils import Utilities
 from ehr2vec.evaluation.utils import get_pos_weight, get_sampler
-from ehr2vec.model.model import (BertEHRModel, BertForFineTuning, BertForFineTuningWithFocalLoss,
+from ehr2vec.model.model import (BertEHRModel, BertForFineTuning,
                                  HierarchicalBertForPretraining)
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
@@ -55,21 +55,21 @@ class Initializer:
                             'pool_type':self.cfg.model.get('pool_type', 'mean'),
                             'prolonged_length_of_stay':False,
             })
-            # check if using focal loss
-            if self.cfg.model.get('focal_loss', False):
-                model = self.loader.load_model(
-                    BertForFineTuning, 
-                    checkpoint=self.checkpoint, 
-                    add_config=add_config,
-                    )
-                print('Using focal loss')
-            else:
-                model = self.loader.load_model(
-                    BertForFineTuningWithFocalLoss, 
-                    checkpoint=self.checkpoint, 
-                    add_config=add_config,
-                    )
-                print('Using BCEWithLogitsLoss')
+            
+            loss_name = self.cfg.model.get('loss_fct', 'bce')
+            add_config.update({'loss_fct': loss_name})
+            if loss_name == 'focal_loss':
+                add_config.update({'gamma': self.cfg.model.get('gamma', 2)})
+                add_config.update({'alpha': self.cfg.model.get('alpha', 0.25)})
+            elif loss_name == 'focal_loss_adaptive':
+                add_config.update({'gamma': self.cfg.model.get('gamma', 0)})
+            
+            model = self.loader.load_model(
+                BertForFineTuning, 
+                checkpoint=self.checkpoint,
+                add_config=add_config
+                )
+
             model.to(self.device) 
             return model
         else:

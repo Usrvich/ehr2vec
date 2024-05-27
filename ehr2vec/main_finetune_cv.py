@@ -8,7 +8,7 @@ from ehr2vec.common.initialize import Initializer, ModelManager
 from ehr2vec.common.loader import load_and_select_splits
 from ehr2vec.common.setup import (DirectoryPreparer, copy_data_config,
                                   copy_pretrain_config, get_args)
-from ehr2vec.common.utils import Data, compute_number_of_warmup_steps
+from ehr2vec.common.utils import Data
 from ehr2vec.data.dataset import BinaryOutcomeDataset
 from ehr2vec.data.prepare_data import DatasetPreparer
 from ehr2vec.data.split import get_n_splits_cv
@@ -17,9 +17,11 @@ from ehr2vec.evaluation.utils import (
     split_into_test_data_and_train_val_indices)
 from ehr2vec.trainer.trainer import EHRTrainer
 
-CONFIG_NAME = 'finetune.yaml'
-N_SPLITS = 2  # You can change this to desired value
-BLOBSTORE='PHAIR'
+# CONFIG_NAME = 'finetune_pcsk9.yaml'
+# CONFIG_NAME = 'finetune_anti_pcsk9_intraining_calibration.yaml'
+CONFIG_NAME = 'finetune_diabetes.yaml'
+N_SPLITS = 5 #5  # You can change this to desired value
+BLOBSTORE='XUE'
 DEAFAULT_VAL_SPLIT = 0.2
 
 args = get_args(CONFIG_NAME)
@@ -30,9 +32,6 @@ config_path = join(dirname(abspath(__file__)), args.config_path)
 def finetune_fold(cfg, train_data:Data, val_data:Data, 
                 fold:int, test_data: Data=None)->None:
     """Finetune model on one fold"""
-    if 'scheduler' in cfg:
-        logger.info('Computing number of warmup steps')
-        compute_number_of_warmup_steps(cfg, len(train_data))
     fold_folder = join(finetune_folder, f'fold_{fold}')
     os.makedirs(fold_folder, exist_ok=True)
     os.makedirs(join(fold_folder, "checkpoints"), exist_ok=True)
@@ -94,14 +93,13 @@ def split_and_finetune(data: Data, train_indices: list, val_indices: list, fold:
     check_data_for_overlap(train_data, val_data, test_data)
     finetune_fold(cfg, train_data, val_data, fold, test_data)
 
-def _limit_patients(indices_or_pids: list, split: str)->list:
-    if f'number_of_{split}_patients' in cfg.data:
-        number_of_patients = cfg.data.get(f'number_of_{split}_patients')
-        if len(indices_or_pids) >= number_of_patients:
-            indices_or_pids = indices_or_pids[:number_of_patients]
-            logger.info(f"Number of {split} patients is limited to {number_of_patients}")
+def _limit_train_patients(indices_or_pids: list)->list:
+    if 'number_of_train_patients' in cfg.data:
+        if len(indices_or_pids) >= cfg.data.number_of_train_patients:
+            indices_or_pids = indices_or_pids[:cfg.data.number_of_train_patients]
+            logger.info(f"Number of train patients is limited to {cfg.data.number_of_train_patients}")
         else:
-            raise ValueError(f"Number of train patients is {len(indices_or_pids)}, but should be at least {number_of_patients}")
+            raise ValueError(f"Number of train patients is {len(indices_or_pids)}, but should be at least {cfg.data.number_of_train_patients}")
     return indices_or_pids
 
 def cv_loop(data: Data, train_val_indices: list, test_data: Data)->None:
@@ -110,8 +108,7 @@ def cv_loop(data: Data, train_val_indices: list, test_data: Data)->None:
         fold += 1
         logger.info(f"Training fold {fold}/{N_SPLITS}")
         logger.info("Splitting data")
-        train_indices = _limit_patients(train_indices, 'train')
-        val_indices = _limit_patients(val_indices, 'val')
+        train_indices = _limit_train_patients(train_indices)
         split_and_finetune(data, train_indices, val_indices, fold, test_data)
 
 def finetune_without_cv(data: Data, train_val_indices:list, test_data: Data=None)->None:
@@ -130,12 +127,26 @@ def cv_loop_predefined_splits(data: Data, predefined_splits_dir: str, test_data:
         fold = int(split(fold_dir)[1].split('_')[1])
         logger.info(f"Training fold {fold}/{len(fold_dirs)}")
         train_data, val_data = load_and_select_splits(fold_dir, data)
-        train_pids = _limit_patients(train_data.pids, 'train')
-        val_pids = _limit_patients(val_data.pids, 'val')
-        if len(train_pids)<len(train_data.pids):
-            train_data = data.select_data_subset_by_pids(train_pids, mode='train')
-        if len(val_pids)<len(val_data.pids):
-            val_data = data.select_data_subset_by_pids(val_pids, mode='val')
+        train_pids = _limit_train_patients(train_data.pids)
+        train_data = data.select_data_subset_by_pids(train_pids, mode='train')
+        check_data_for_overlap(train_data, val_data, test_data)
+        finetune_fold(cfg, train_data, val_data, fold, test_data)
+    return N_SPLITS
+
+def cv_loop_predefined_splits_tests(data: Data, predefined_splits_dir: str)->int:
+    """Loop over predefined splits and test sets"""
+    # find fold_1, fold_2, ... folders in predefined_splits_dir
+    fold_dirs = [join(predefined_splits_dir, d) for d in os.listdir(predefined_splits_dir) if os.path.isdir(os.path.join(predefined_splits_dir, d)) and 'fold_' in d]
+    N_SPLITS = len(fold_dirs)
+    for fold_dir in fold_dirs:
+        fold = int(split(fold_dir)[1].split('_')[1])
+        logger.info(f"Training fold {fold}/{len(fold_dirs)}")
+        train_data, val_data = load_and_select_splits(fold_dir, data)
+        train_pids = _limit_train_patients(train_data.pids)
+        train_data = data.select_data_subset_by_pids(train_pids, mode='train')
+        test_pids = torch.load(join(fold_dir, 'pids_test.pt')) if os.path.exists(join(fold_dir, 'pids_test.pt')) else []
+        test_data = data.select_data_subset_by_pids(test_pids, mode='test')
+        # save_data(test_data, join(finetune_folder, ))
         check_data_for_overlap(train_data, val_data, test_data)
         finetune_fold(cfg, train_data, val_data, fold, test_data)
     return N_SPLITS
@@ -152,13 +163,17 @@ if __name__ == '__main__':
     dataset_preparer = DatasetPreparer(cfg)
     data = dataset_preparer.prepare_finetune_data()    
     
+#     if 'predefined_splits' in cfg.paths:
+#         logger.info('Using predefined splits')
+#         test_pids = torch.load(join(cfg.paths.predefined_splits, 'test_pids.pt')) if os.path.exists(join(cfg.paths.predefined_splits, 'test_pids.pt')) else []
+#         test_data = data.select_data_subset_by_pids(test_pids, mode='test')
+#         save_data(test_data, finetune_folder)
+#         N_SPLITS = cv_loop_predefined_splits(data, cfg.paths.predefined_splits, test_data)
+    
     if 'predefined_splits' in cfg.paths:
         logger.info('Using predefined splits')
-        test_pids = torch.load(join(cfg.paths.predefined_splits, 'test_pids.pt')) if os.path.exists(join(cfg.paths.predefined_splits, 'test_pids.pt')) else []
-        test_pids = list(set(test_pids))
-        test_data = data.select_data_subset_by_pids(test_pids, mode='test')
-        save_data(test_data, finetune_folder)
-        N_SPLITS = cv_loop_predefined_splits(data, cfg.paths.predefined_splits, test_data)
+        N_SPLITS = cv_loop_predefined_splits_tests(data, cfg.paths.predefined_splits)
+
 
     else:
         logger.info('Splitting data')
@@ -170,12 +185,14 @@ if __name__ == '__main__':
             finetune_without_cv(data, train_val_indices, test_data)
 
     compute_and_save_scores_mean_std(N_SPLITS, finetune_folder, mode='val')
-    if len(test_data) > 0:
-        compute_and_save_scores_mean_std(N_SPLITS, finetune_folder, mode='test')    
+    # if len(test_data) > 0:
+    #     compute_and_save_scores_mean_std(N_SPLITS, finetune_folder, mode='test')    
+    if 'predefined_splits' in cfg.paths:
+        compute_and_save_scores_mean_std(N_SPLITS, finetune_folder, mode='test')
     
     if cfg.env=='azure':
         save_path = pretrain_model_path if cfg.paths.get("save_folder_path", None) is None else cfg.paths.save_folder_path
         save_to_blobstore(local_path=cfg.paths.run_name, 
-                          remote_path=join(BLOBSTORE, save_path, cfg.paths.run_name))
+                          remote_path=join(BLOBSTORE, save_path, cfg.paths.run_name), overwrite=False)
         mount_context.stop()
     logger.info('Done')

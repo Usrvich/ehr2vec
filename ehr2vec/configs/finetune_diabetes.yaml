@@ -1,0 +1,81 @@
+data:
+  censorer:
+    _target_: data_fixes.censor.EQ_Censorer
+  max_age: 120
+  min_age: 0
+  min_len: 1
+  # remove_background: false
+  remove_background:
+    dataset:
+      ignore_special_tokens: true
+      masking_ratio: 0.8
+      replace_ratio: 0.1
+      select_ratio: 0.2
+    remove_background: false
+    
+  select_censored: false
+  test_split: 0.0 # 0.333333
+  truncation_len: 512
+  
+description:  CV DIABETES 5 folds # CV DIABETES
+env: azure
+
+initial_cv_ft: True
+
+metrics:
+  mean_probability:
+    _target_: evaluation.metrics.Mean_Probability
+  pr_auc:
+    _target_: evaluation.metrics.PR_AUC
+  precentage_positives:
+    _target_: evaluation.metrics.Percentage_Positives
+  roc_auc:
+    _target_: evaluation.metrics.ROC_AUC
+model:
+  behrt_embeddings: false
+  bidirectional: true
+  discrete_abspos_embeddings: false
+  fix_bert: false
+  plusplus: true
+  pool_type: gru
+  focal_loss: false
+optimizer:
+  eps: 1.0e-06
+  lr: 2.0e-05
+outcome:
+  censor_type: DIABETES
+  n_hours: -4383
+  type: DIABETES
+paths:
+  data_path: features/med_diag_03 #/tmp/tmpwe19o_ms/features/med_diag_03
+  outcome: outcomes/CHRONIC_DISEASES/CHRONIC_DISEASES.pt # /tmp/tmpwe19o_ms/outcomes/CHRONIC_DISEASES/CHRONIC_DISEASES.pt
+  output_path: outputs
+  predefined_splits: DIABETES_10_folds/post_hoc_splits # /tmp/tmpwe19o_ms/models/final_pretraining/CV_splits_and_stats_diag/finetune_DIABETES_censored_182_days_pre_DIABETES_all/
+  pretrain_model_path: models/DIABETES/FV1_BS1_SEP1__abspos_++_t2v_age__MRR20
+  run_name: finetune_DIABETES_censored_182_days_pre_DIABETES_CV_5folds_t2v_AgeAbspos_++_MRR20__BiGRU
+  save_folder_path: models/DIABETES/baseline_BCELoss
+  tokenized_dir: tokenized_fv_sep_pt_1_1M
+  tokenized_file: tokenized_finetune.pt
+  tokenized_pids: pids_finetune.pt
+scheduler:
+  _target_: transformers.get_constant_schedule_with_warmup
+  # num_warmup_epochs: 5
+  num_warmup_steps: 30000
+trainer_args:
+  batch_size: 512
+  checkpoint_frequency: 5
+  early_stopping: 5
+  effective_batch_size: 512
+  epochs: 50
+  gradient_clip:
+    clip_value: 1.0
+  info: true
+  mixed_precision: false
+  pos_weight: null
+  sample_weight_function:
+    _target_: evaluation.utils.inverse_sqrt
+  sample_weight_multiplier: 1
+  sampler: true
+  shuffle: false
+  stopping_metric: roc_auc
+  val_batch_size: 512
